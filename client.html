@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Chatty</title>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script type="text/javascript" src="client.js"></script>
+<script type="text/javascript" charset="utf-8">
+$(function() {
+  var chat = new Chat();
+  chat.joinAs("User_"+parseInt(Math.random()*100));
+});  
+</script>
+</head>
+<body id="index" class="home">
+  <input type="text" name="message" value="" id="message">
+</body>
+</html>
