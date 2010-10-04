@@ -10,24 +10,23 @@ app = router.listen(PORT, HOST);
 app.fileMap("/client.js", "client.js");
 app.fileMap("/client.html", "client.html");
 
-app.get("/join", function(req, res) {
-  var nick = qs.parse(url.parse(req.url).query).nick;  
-  res.render("Join: " +nick);
-  router.log("Connection: " + nick + "@" + res.connection.remoteAddress);
+app.get("/join", function(params) {
+  //var nick = qs.parse(url.parse(req.url).query).nick;  
+  var nick = params.nick;
+  params.render("Join: " +nick);
+  router.log("Connection: " + nick + "@" + params.connection.remoteAddress);
 });
 
-app.post("/send", function(req, res, data) {
-  router.log("Received: "+data);
-  var message = data.message;
+app.post("/send", function(params) {
+  var message = params.message;
+  router.log("Received: " + message);
   var id = Chat.appendMessage(message);
-  res.render({id:id}, {json:true});
+  params.render({id:id}, {json:true});
 });
 
-app.get("/receive", function(req, res) {
-  var query = qs.parse(url.parse(req.url).query);
-  var id = query.id;
-  var self = this;
+app.get("/receive", function(params) {
+  var id = params.id;
   Chat.messages(id, function(messages) {
-    res.render(messages, {json:true});
+    params.render(messages, {json:true});
   });
 });

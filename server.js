@@ -27,11 +27,22 @@ httpServer = http.createServer(function (req, res) {
 
   req.addListener('end', function() {
     var obj = qs.parse(body.replace(/\+/g, ' '));
+    var query = qs.parse(url.parse(req.url).query);
+    req.response = res;
+    
+    for(i in obj) {
+      req[i] = obj[i];
+    }
+    
+    for(i in query) {
+      req[i] = query[i];
+    }
+    
     var handler = router.resolve(req);
-    handler(req, res, obj);
+    handler(req);
   });
 
-  res.render = function (content, opts) {  
+  req.render = function (content, opts) {  
     var body = content;
 
     opts = opts || {}
@@ -57,7 +68,6 @@ httpServer = http.createServer(function (req, res) {
   
 });
 
-
 exports = router = new function() {
   var routes = {};
   var self = this;
@@ -65,8 +75,8 @@ exports = router = new function() {
   this.fileMap = function(path, filename) {            
     self.get(path, function(req, res) {
       self.staticHandler(filename, function () {
-        res.writeHead(200, []);
-        res.end(body);
+        req.response.writeHead(200, []);
+        req.response.end(body);
       })
     });    
   };
@@ -101,10 +111,10 @@ exports = router = new function() {
   };
   
   this.notFound = function(req, res) {
-    res.writeHead(404, { "Content-Type": "text/plain"
+    req.response.writeHead(404, { "Content-Type": "text/plain"
                        , "Content-Length": NOT_FOUND.length
                        });
-    res.end(NOT_FOUND);
+    req.response.end(NOT_FOUND);
   };
   
   this.listen = function(port, host) {
@@ -134,7 +144,7 @@ Chat = new function() {
   this.messages = function(id, callback) {
     var result = [];
     id = id ? id : 0;
-    router.log("Since: "+id);
+    router.log("Requested messages > "+id);
     
     for(i = id; i < messages.length; i++) {
       result.push(messages[i]);
