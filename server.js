@@ -1,9 +1,10 @@
+require("./extensions");
+
 var sys = require("sys");
 var url = require("url");
 var http = require("http");
 var qs = require("querystring");
 var readFile = require("fs").readFile;
-
 
 var NOT_FOUND = "Not Found\n";
 
@@ -57,7 +58,7 @@ httpServer = http.createServer(function (req, res) {
 });
 
 
-var router = new function() {
+exports = router = new function() {
   var routes = {};
   var self = this;
   
@@ -71,7 +72,7 @@ var router = new function() {
   };
   
   this.staticHandler = function (filename, callback) {
-    self.log("loading " + filename + "...");
+    self.log("Loading file " + filename);
     readFile(filename, function (err, data) {
       if (err) {
         self.log("Error loading " + filename);
@@ -95,13 +96,8 @@ var router = new function() {
     return routes[url.parse(request.url).pathname] || self.notFound;
   }
 
-  this.listen = function (port, host) {
-    self.log("Server at http://" + (host || "127.0.0.1") + ":" + port.toString() + "/");
-    server.listen(port, host);
-  };
-
   this.log = function(message, vebosity) {
-    sys.puts(Date.now() + ": " + sys.inspect(message));
+    sys.puts("["+(new Date()).strftime("%H:%m:%S %d-%m-%Y") + "] " + sys.inspect(message));
   };
   
   this.notFound = function(req, res) {
@@ -111,11 +107,8 @@ var router = new function() {
     res.end(NOT_FOUND);
   };
   
-  this.handler = function(route) {
-    
-  };
-  
   this.listen = function(port, host) {
+    router.log("Server at http://" + (host || "127.0.0.1") + ":" + port.toString() + "/");    
     httpServer.listen(Number(process.env.PORT || port), host);
     return self;
   }; 
@@ -173,34 +166,4 @@ Chat = new function() {
 
 
 
-var PORT = 8000;
-var HOST = "127.0.0.1";
-
-app = router.listen(PORT, HOST);
-
-app.fileMap("/client.js", "client.js");
-app.fileMap("/client.html", "client.html");
-
-app.get("/join", function(req, res) {
-  var nick = qs.parse(url.parse(req.url).query).nick;  
-  res.render("Join: " +nick);
-  router.log("Connection: " + nick + "@" + res.connection.remoteAddress);
-});
-
-app.post("/send", function(req, res, data) {
-  router.log("Received: "+data);
-  var message = data.message;
-  var id = Chat.appendMessage(message);
-  res.render({id:id}, {json:true});
-});
-
-app.get("/receive", function(req, res) {
-  var query = qs.parse(url.parse(req.url).query);
-  var id = query.id;
-  var self = this;
-  sys.puts(sys.inspect(this));
-  Chat.messages(id, function(messages) {
-    res.render(messages, {json:true});
-  });
-});
 
