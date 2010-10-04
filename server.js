@@ -39,8 +39,14 @@ httpServer = http.createServer(function (req, res) {
     }
     
     var handler = router.resolve(req);
-    handler(req);
+    var result = handler(req);
+    this.display(result);
   });
+  
+  this.display = function(content) {
+    if(typeof content == "string")
+      req.render(content);
+  };
 
   req.render = function (content, opts) {  
     var body = content;

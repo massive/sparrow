@@ -11,10 +11,9 @@ app.fileMap("/client.js", "client.js");
 app.fileMap("/client.html", "client.html");
 
 app.get("/join", function(params) {
-  //var nick = qs.parse(url.parse(req.url).query).nick;  
   var nick = params.nick;
-  params.render("Join: " +nick);
   router.log("Connection: " + nick + "@" + params.connection.remoteAddress);
+  return "Join: " + nick;
 });
 
 app.post("/send", function(params) {
@@ -27,6 +26,9 @@ app.post("/send", function(params) {
 app.get("/receive", function(params) {
   var id = params.id;
   Chat.messages(id, function(messages) {
-    params.render(messages, {json:true});
+    return {
+        type: 'application/json',
+        body: JSON.stringify(messages)
+      }
   });
 });
