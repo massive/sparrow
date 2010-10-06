@@ -18,8 +18,10 @@ Function.prototype.bind = function(thisValue) {
 };
 
 httpServer = http.createServer(function (req, res) {
-  router.log("Request URL: "+req.url);
+  var self = this;
   var body = '';
+
+  router.log("Request URL: "+req.url);
   
   req.addListener('data', function(chunk){
      body += chunk;
@@ -40,52 +42,61 @@ httpServer = http.createServer(function (req, res) {
     
     var handler = router.resolve(req);
     var result = handler(req);
-    this.display(result);
+    req.display(result);
   });
   
-  this.display = function(content) {
-    if(typeof content == "string")
+  req.display = function(content) {
+    if(typeof content == "undefined") {
+      router.log("Render nothing");
+      return;
+    };
+    
+    if(typeof content == "string") {
+      router.log("Render String");      
+      req.render({
+        body : content,
+        type : 'text/plain'
+      });
+    } else if(content['json'] || typeof content == 'object') {
+      router.log("Render JSON");      
+      req.render({
+        type: 'application/json',
+        body: JSON.stringify(content['json'] || content)
+      });
+    } else {
+      router.log("Render something");      
       req.render(content);
+    }      
   };
 
-  req.render = function (content, opts) {  
-    var body = content;
+  req.render = function (content) {  
+    var body = content['body'];
 
-    opts = opts || {}
-    opts['Content-Type'] = "text/plain";
+    if(typeof content['code'] == "undefined") 
+      content['code'] = 200;
 
-    if(opts['json']) {
-      body = JSON.stringify(content);
-      opts['Content-Type'] = "javascript/json";
-    }
-
-    if(typeof opts['code'] == "undefined") 
-      opts['code'] = 200;
-
-    res.writeHead(opts['code'], 
-      { "Content-Type"   : opts['Content-Type'],
+    res.writeHead(content['code'], 
+      { "Content-Type"   : content['type'],
         "Content-Length" : body.length
       }
     );
-    router.log("Rendering "+body);    
-
+    router.log("Rendering " + sys.inspect(body));
     res.end(body);
-  };
-  
+  };  
 });
 
 exports = router = new function() {
   var routes = {};
   var self = this;
-  
-  this.fileMap = function(path, filename) {            
-    self.get(path, function(req, res) {
+    
+  this.fileHandler = function(filename) {
+    return function(request) { 
       self.staticHandler(filename, function () {
-        req.response.writeHead(200, []);
-        req.response.end(body);
-      })
-    });    
-  };
+        request.response.writeHead(200, []);
+        request.response.end(body);
+      });
+    };
+  }
   
   this.staticHandler = function (filename, callback) {
     self.log("Loading file " + filename);
@@ -101,6 +112,9 @@ exports = router = new function() {
   };
   
   this.get = function (path, handler) {
+    if(typeof handler == "object") {
+      handler = this.fileHandler(handler["file"]);
+    }
     routes[path] = handler;
   };
 
@@ -113,7 +127,10 @@ exports = router = new function() {
   }
 
   this.log = function(message, vebosity) {
-    sys.puts("["+(new Date()).strftime("%H:%m:%S %d-%m-%Y") + "] " + sys.inspect(message));
+    if(typeof message != "string")
+      message = sys.inspect(message);
+      
+    sys.puts("["+(new Date()).strftime("%H:%m:%S %d-%m-%Y") + "] " + message);
   };
   
   this.notFound = function(req, res) {
@@ -129,48 +146,6 @@ exports = router = new function() {
     return self;
   }; 
 }
-      
-
-Chat = new function() {
-  var messages = [];
-  var callbacks = [];
-    
-  this.appendMessage = function(text) {
-    router.log("New message: " + text);
-    m = {message:text, id: messages.length};
-    messages.push(m);
-    
-    while (callbacks.length > 0) {
-       callbacks.shift().callback({messages: [m], last_id: messages.length});
-    }
-    
-    return messages.length;
-  };
-  
-  this.messages = function(id, callback) {
-    var result = [];
-    id = id ? id : 0;
-    router.log("Requested messages > "+id);
-    
-    for(i = id; i < messages.length; i++) {
-      result.push(messages[i]);
-    }
-    
-    if (result.length != 0) {
-      callback({messages: result, last_id: messages.length});
-    } else {
-      callbacks.push({timestamp: new Date(), callback: callback });
-    }
-    
-    setInterval(function () {
-      var now = new Date();
-      while (callbacks.length > 0 && now - callbacks[0].timestamp > 1*1000) {
-        callbacks.shift().callback({messages: [], last_id: messages.length});
-      }
-    }, 3000);      
-  };
-};
-
 
 
 
