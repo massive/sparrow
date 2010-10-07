@@ -1,47 +1,57 @@
-var id = 0;
+function Chat() {
+  this.id = 0;
+  this.key = 0;
+};
 
-function Chat() { };
-
-Chat.prototype = {
-  longPoll : function() {
-    that = this;
+Chat.prototype = {  
+  longPoll : function() {    
+    var self = this;
+    
 	  $.ajax({
 			cache: false,
 			dataType: 'json',
 			type: "GET",      
 			url: "/receive",
 			error: function () {
-				setTimeout(poll, 10*1000);
+				setTimeout(self.longPoll, 10*1000);
 			},
 			data : {
-			  id : id
+			  id  : self.id,
+			  key : self.key
 			},
 			success: function (json) {
 			  if(json.messages) {
-  			  console.log("Current id:"+id);
-  				that.writeResult(json);
-          id = json.last_id;
-  			  console.log("New id:"+id);
+  			  console.log("Current id:"+ self.id);
+  				self.writeResult(json);
+          self.id = json.last_id;
+  			  console.log("New id:"+ self.id);
   			} else {
   			  console.log("Received empty packet");
   			}
-			  that.longPoll();        
+			  self.longPoll();        
 			}
 		});
 	},
 	
 	joinAs : function(nick) {
+	  var self = this;
 	  $.ajax({
 	    type: "GET",
 	    url: "/join",
+	    dataType : 'json',
 	    data :  {
 	      nick : nick
+	    },
+	    success : function(json) {
+	      self.key = json.key;
+	      console.log(self);
 	    }
 	  });
 	  this.attach();
 	},
 	
   attach : function() {
+    var self = this;
     $('#message').keyup(function(e) {
     	if(e.keyCode == 13) {
     	  var message = $(this).val();
@@ -49,19 +59,45 @@ Chat.prototype = {
     	    type : "POST",
     			url: "http://127.0.0.1:8000/send",
     	    data : {
-    	      message : message
+    	      message : message,
+    	      key : self.key
     	    }
     	  });
     	  $(this).val("");
     	}  	
     });
     this.longPoll();
+    this.who();
   },
+  
+  who : function() {
+    var self = this;
+    
+	  $.ajax({
+			dataType: 'json',
+			type: "GET",      
+			url: "/who",
+			data : {
+			  key : self.key
+			},
+			success: function (json) {
+			  setTimeout(self.who, 5000);
+        self.writeWho(json);
+			}
+		});
+  },
+  
+  writeWho : function(users) {
+    $("#who").empty();
+    for(u in users) {
+      $("#who").append("<div>"+users[u]+"</div>");
+    }
+  },  
 
   writeResult : function(json) {
     messages = json['messages']
     for(o in messages) {
-      $("body").append("<div>"+messages[o].message+"</div>");
+      $("#messages").append("<div><span>"+messages[o].nick+"</span>: <span>"+messages[o].message+"</span></div>");
     }
   }
 	

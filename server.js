@@ -33,7 +33,6 @@ httpServer = http.createServer(function (request, response) {
     }
     
     request.params = params;
-    log(params);
     var handler = Nodework.resolve(request);
     var result = handler(request);
     if(typeof result != "undefined" || typeof result != "boolean")
@@ -54,6 +53,9 @@ httpServer = http.createServer(function (request, response) {
         type : 'text/plain'
       });
     } else if(content['json'] || typeof content == 'object') {
+      //content = content['json'] || content;
+      log(content);
+      log(JSON.stringify(['a', 'v', 'c']))
       request.writeResult({
         type: 'application/json',
         body: JSON.stringify(content['json'] || content)
@@ -65,7 +67,6 @@ httpServer = http.createServer(function (request, response) {
 
   request.writeResult = function (content) {  
     var body = content['body'];
-
     if(typeof content['code'] == "undefined") 
       content['code'] = 200;
       

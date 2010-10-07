@@ -15,14 +15,16 @@ app.get("/", function(request) {
 
 app.get("/join", function(params) {
   var nick = params.nick;
-  log("Connection: " + nick + "@" + params.connection.remoteAddress);
-  return "Join: " + nick;
+  var session = Chat.createSession(nick);
+  log("Connection: " + nick + "@" + params.connection.remoteAddress);  
+  return session;
 });
 
 app.post("/send", function(params) {
   var message = params.message;
-  log("Received: " + message);
-  var id = Chat.push(message);
+  var session = Chat.session(params.key);
+  log("Received: " + message + " by " + session.nick);
+  var id = Chat.push(message, session.nick);
   return {json:id};
 });
 
@@ -33,13 +35,46 @@ app.get("/receive", function(request) {
   });
 });
 
+app.get("/who", function(request) {
+  return Chat.activeSessions();
+});
+
 Chat = new function() {
-  var messages = [];
+  var messages  = [];
   var callbacks = [];
-    
-  this.push = function(text) {
+  var sessions  = [];
+  
+  this.key = function(){
+		var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', // base64 alphabet
+			  ret = '';
+
+		for (var bits=32; bits > 0; --bits){
+			ret += chars[0x3F & (Math.floor(Math.random() * 0x100000000))];
+		}
+		return ret;
+	};
+	
+	this.activeSessions = function() {
+	  var nicks = [];
+    for(i in sessions) {
+      nicks.push(sessions[i].nick)
+    }
+    return nicks;
+	};
+	
+	this.session = function(key) {
+	  return sessions[key];
+	};
+	
+	this.createSession = function(nick) {
+	  var session = {key:this.key(), nick:nick};
+	  sessions[session.key] = session;
+	  return session;
+	};	
+
+  this.push = function(text, nick) {
     log("New message received: " + text);
-    message = { message:text, id: messages.length };
+    message = { message: text, id: messages.length, nick : nick};
     messages.push(message);
     
     while (callbacks.length > 0) {
