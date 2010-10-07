@@ -1,6 +1,18 @@
 // version 0.11 by Daniel Rench
 // More information: http://dren.ch/strftime/
 // This is public domain software
+Function.prototype.bind = function(thisValue) {
+    var f = this;
+    return function() {
+        return f.apply(thisValue, arguments);
+    };
+};
+
+Object.prototype.extend = function(destination, source) {
+    for (var property in source)
+        destination[property] = source[property];
+    return destination;
+};
 
 Number.prototype.pad =
 	function (n,p) {

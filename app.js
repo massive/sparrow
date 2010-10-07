@@ -6,33 +6,30 @@ var sys = require("sys");
 var PORT = 8000;
 var HOST = "127.0.0.1";
 
-app = router.listen(PORT, HOST);
-
+app = Nodework.listen(PORT, HOST);
 app.get("/client.js", {file : "client.js"});
 app.get("/client.html", {file : "client.html"});
+app.get("/", function(request) {
+  request.redirect("/client.html");
+});
 
 app.get("/join", function(params) {
   var nick = params.nick;
-  router.log("Connection: " + nick + "@" + params.connection.remoteAddress);
+  log("Connection: " + nick + "@" + params.connection.remoteAddress);
   return "Join: " + nick;
 });
 
 app.post("/send", function(params) {
   var message = params.message;
-  router.log("Received: " + message);
-  var id = Chat.appendMessage(message);
+  log("Received: " + message);
+  var id = Chat.push(message);
   return {json:id};
 });
 
-app.get("/receive", function(params) {
-  var id = params.id;
-  Chat.messages(id, function(messages) {
-    router.log(params.id);
-    //router.log(sys.inspect(messages));
-    /*return {
-      json : messages
-    };*/
-    params.display(messages);
+app.get("/receive", function(request) {
+  var id = request.params.id;
+  Chat.query(id, function(messages) {
+    request.render(messages);
   });
 });
 
@@ -40,22 +37,22 @@ Chat = new function() {
   var messages = [];
   var callbacks = [];
     
-  this.appendMessage = function(text) {
-    router.log("New message: " + text);
-    m = {message:text, id: messages.length};
-    messages.push(m);
+  this.push = function(text) {
+    log("New message received: " + text);
+    message = { message:text, id: messages.length };
+    messages.push(message);
     
     while (callbacks.length > 0) {
-       callbacks.shift().callback({messages: [m], last_id: messages.length});
+       callbacks.shift().callback({messages: [message], last_id: messages.length});
     }
     
     return messages.length;
   };
   
-  this.messages = function(id, callback) {
+  this.query = function(id, callback) {
     var result = [];
     id = id ? id : 0;
-    router.log("Requested messages > "+id);
+    log("Requested all messages since ID "+id);
     
     for(i = id; i < messages.length; i++) {
       result.push(messages[i]);

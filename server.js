@@ -6,86 +6,87 @@ var http = require("http");
 var qs = require("querystring");
 var readFile = require("fs").readFile;
 
-var NOT_FOUND = "Not Found\n";
-
-var chat = {};
-
-Function.prototype.bind = function(thisValue) {
-    var f = this;
-    return function() {
-        return f.apply(thisValue, arguments);
-    };
-};
-
-httpServer = http.createServer(function (req, res) {
+httpServer = http.createServer(function (request, response) {
   var self = this;
   var body = '';
 
-  router.log("Request URL: "+req.url);
+  log("Requested URL: "+request.url);
   
-  req.addListener('data', function(chunk){
+  request.addListener('data', function(chunk){
      body += chunk;
   });
 
-  req.addListener('end', function() {
+  request.addListener('end', function() {
     var obj = qs.parse(body.replace(/\+/g, ' '));
-    var query = qs.parse(url.parse(req.url).query);
-    req.response = res;
+    var query = qs.parse(url.parse(request.url).query);
+    request.response = response;
+    var params = {};
     
     for(i in obj) {
-      req[i] = obj[i];
+      params[i] = obj[i];
+      request[i] = obj[i];
     }
     
     for(i in query) {
-      req[i] = query[i];
+      params[i] = query[i];
+      request[i] = query[i];
     }
     
-    var handler = router.resolve(req);
-    var result = handler(req);
-    req.display(result);
+    request.params = params;
+    log(params);
+    var handler = Nodework.resolve(request);
+    var result = handler(request);
+    if(typeof result != "undefined" || typeof result != "boolean")
+      request.render(result);
   });
   
-  req.display = function(content) {
+  request.render = function(content) {
     if(typeof content == "undefined") {
-      router.log("Render nothing");
+      log("Render nothing");
       return;
     };
+
+    log("Rendering "+typeof content);      
     
     if(typeof content == "string") {
-      router.log("Render String");      
-      req.render({
+      request.writeResult({
         body : content,
         type : 'text/plain'
       });
     } else if(content['json'] || typeof content == 'object') {
-      router.log("Render JSON");      
-      req.render({
+      request.writeResult({
         type: 'application/json',
         body: JSON.stringify(content['json'] || content)
       });
     } else {
-      router.log("Render something");      
-      req.render(content);
+      request.writeResult(content);
     }      
   };
 
-  req.render = function (content) {  
+  request.writeResult = function (content) {  
     var body = content['body'];
 
     if(typeof content['code'] == "undefined") 
       content['code'] = 200;
-
-    res.writeHead(content['code'], 
+      
+    response.writeHead(content['code'], 
       { "Content-Type"   : content['type'],
-        "Content-Length" : body.length
-      }
+        "Content-Length" : body.length}.extend(content['headers'] || {})
     );
-    router.log("Rendering " + sys.inspect(body));
-    res.end(body);
+    log("Rendering " + sys.inspect(body));
+    response.end(body);
+  };
+  
+  request.redirect = function(location){
+    this.writeResult({  
+      code: 302,
+      headers: [[ 'Location', location ]], 
+      body: '<a href="'+ location + '">' + location + '</a>' 
+    })
   };  
 });
 
-exports = router = new function() {
+exports = Nodework = new function() {
   var routes = {};
   var self = this;
     
@@ -99,13 +100,13 @@ exports = router = new function() {
   }
   
   this.staticHandler = function (filename, callback) {
-    self.log("Loading file " + filename);
+    log("Loading file " + filename);
     readFile(filename, function (err, data) {
       if (err) {
-        self.log("Error loading " + filename);
+        log("Error loading " + filename);
       } else {
         body = data;
-        self.log("Static file " + filename + " loaded");
+        log("Static file " + filename + " loaded");
         callback();
       }
     });    
@@ -124,7 +125,7 @@ exports = router = new function() {
   
   this.resolve = function(request) {
     return routes[url.parse(request.url).pathname] || self.notFound;
-  }
+  };
 
   this.log = function(message, vebosity) {
     if(typeof message != "string")
@@ -132,16 +133,19 @@ exports = router = new function() {
       
     sys.puts("["+(new Date()).strftime("%H:%m:%S %d-%m-%Y") + "] " + message);
   };
+    
+  GLOBAL.log = this.log;
   
-  this.notFound = function(req, res) {
-    req.response.writeHead(404, { "Content-Type": "text/plain"
+  this.notFound = function(request) {
+    var NOT_FOUND = "Not Found\n";
+    request.response.writeHead(404, { "Content-Type": "text/plain"
                        , "Content-Length": NOT_FOUND.length
                        });
-    req.response.end(NOT_FOUND);
+    request.response.end(NOT_FOUND);
   };
   
   this.listen = function(port, host) {
-    router.log("Server at http://" + (host || "127.0.0.1") + ":" + port.toString() + "/");    
+    log("Server at http://" + (host || "127.0.0.1") + ":" + port.toString() + "/");    
     httpServer.listen(Number(process.env.PORT || port), host);
     return self;
   }; 
