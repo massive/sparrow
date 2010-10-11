@@ -1,10 +1,10 @@
 require("./server");
-var qs = require("querystring");
-var url = require("url");
 var sys = require("sys");
+var crypto = require("crypto");
 
 var PORT = 8000;
 var HOST = "127.0.0.1";
+var SECRET = "LiveChatFI";
 
 app = Nodework.listen(PORT, HOST);
 app.get("/client.js", {file : "client.js"});
@@ -15,9 +15,14 @@ app.get("/", function(request) {
 
 app.get("/join", function(params) {
   var nick = params.nick;
-  var session = Chat.createSession(nick);
-  log("Connection: " + nick + "@" + params.connection.remoteAddress);  
-  return session;
+  var hash = params.hash;
+  var session = Chat.createSession(nick, hash);
+  if(session) {
+    log("Connection: " + nick + "@" + params.connection.remoteAddress);  
+    return session;
+  } else {
+    return {error : "Hash does not match"}
+  }    
 });
 
 app.post("/send", function(params) {
@@ -44,20 +49,15 @@ Chat = new function() {
   var callbacks = [];
   var sessions  = [];
   
-  this.key = function(){
-		var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', // base64 alphabet
-			  ret = '';
-
-		for (var bits=32; bits > 0; --bits){
-			ret += chars[0x3F & (Math.floor(Math.random() * 0x100000000))];
-		}
-		return ret;
-	};
-	
+  this.hash = function(data) {
+    return crypto.createHmac("sha1", SECRET).update(data).digest("hex");
+  };
+  	
 	this.activeSessions = function() {
 	  var nicks = [];
     for(i in sessions) {
-      nicks.push(sessions[i].nick)
+      if(sessions[i].hasOwnProperty("nick"))
+        nicks.push(sessions[i].nick);
     }
     return nicks;
 	};
@@ -66,10 +66,15 @@ Chat = new function() {
 	  return sessions[key];
 	};
 	
-	this.createSession = function(nick) {
-	  var session = {key:this.key(), nick:nick};
-	  sessions[session.key] = session;
-	  return session;
+	this.createSession = function(nick, hash) {
+	  var session = {key:this.hash(nick), nick:nick};
+	  if(this.hash(nick) == hash) {
+	    sessions[session.key] = session;
+	    return session;
+	  } else {
+	    log("Got hash "+hash+". Expected hash "+this.hash(nick));
+	    return false;
+	  }
 	};	
 
   this.push = function(text, nick) {
@@ -101,7 +106,7 @@ Chat = new function() {
     
     setInterval(function () {
       var now = new Date();
-      while (callbacks.length > 0 && now - callbacks[0].timestamp > 3*1000) {
+      while (callbacks.length > 0 && now - callbacks[0].timestamp > 30*1000) {
         callbacks.shift().callback({messages: [], last_id: messages.length});
       }
     }, 3000);    

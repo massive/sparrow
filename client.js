@@ -33,21 +33,21 @@ Chat.prototype = {
 		});
 	},
 	
-	joinAs : function(nick) {
+	joinAs : function(nick, hash) {
 	  var self = this;
 	  $.ajax({
 	    type: "GET",
 	    url: "/join",
 	    dataType : 'json',
 	    data :  {
-	      nick : nick
+	      nick : nick,
+	      hash : hash
 	    },
 	    success : function(json) {
 	      self.key = json.key;
-	      console.log(self);
+    	  self.attach();
 	    }
 	  });
-	  this.attach();
 	},
 	
   attach : function() {
@@ -81,13 +81,16 @@ Chat.prototype = {
 			  key : self.key
 			},
 			success: function (json) {
-			  setTimeout(self.who, 5000);
-        self.writeWho(json);
+        self.writeWho(json);        
+    	  setTimeout(function() { self.who() }, 5000);
 			}
 		});
+		console.log("Running who")
   },
   
   writeWho : function(users) {
+    var self = this;
+    
     $("#who").empty();
     for(u in users) {
       $("#who").append("<div>"+users[u]+"</div>");

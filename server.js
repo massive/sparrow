@@ -44,28 +44,32 @@ httpServer = http.createServer(function (request, response) {
       log("Render nothing");
       return;
     };
+    
+    if(content.error) {
+      this.output({
+        body : content.error,
+        code : 400
+      });
+    }
 
     log("Rendering "+typeof content);      
-    
+        
     if(typeof content == "string") {
-      request.writeResult({
+      request.output({
         body : content,
         type : 'text/plain'
       });
     } else if(content['json'] || typeof content == 'object') {
-      //content = content['json'] || content;
-      log(content);
-      log(JSON.stringify(['a', 'v', 'c']))
-      request.writeResult({
+      request.output({
         type: 'application/json',
         body: JSON.stringify(content['json'] || content)
       });
     } else {
-      request.writeResult(content);
+      request.output(content);
     }      
   };
 
-  request.writeResult = function (content) {  
+  request.output = function (content) {  
     var body = content['body'];
     if(typeof content['code'] == "undefined") 
       content['code'] = 200;
@@ -79,7 +83,7 @@ httpServer = http.createServer(function (request, response) {
   };
   
   request.redirect = function(location){
-    this.writeResult({  
+    this.output({  
       code: 302,
       headers: [[ 'Location', location ]], 
       body: '<a href="'+ location + '">' + location + '</a>' 
