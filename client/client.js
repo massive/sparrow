@@ -1,6 +1,6 @@
 function Chat(address, port) {
   this.id = 0;
-  this.key = 0;
+  this.hash = "";
   this.address = address;
   this.port = port;
 };
@@ -19,24 +19,25 @@ Chat.prototype = {
 			},
 			data : {
 			  id  : self.id,
-			  key : self.key
+			  hash : self.hash
 			},
 			success: function (json) {
-			  if(json.messages) {
-  			  console.log("Current id:"+ self.id);
-  				self.writeResult(json);
-          self.id = json.last_id;
-  			  console.log("New id:"+ self.id);
+			  if(json.op == "new_message") {
+  				self.appendMessages(json.data.messages);
+          self.id = json.data.last_id;
+			  } else if(json.op == "new_user") {
+			    self.newUser(json.data.new_user);
   			} else {
-  			  console.log("Received empty packet");
-  			}
-			  self.longPoll();        
+  			  console.log("Received unknown packet: "+json.op);
+  			}  			
+  			self.longPoll();
 			}
 		});
 	},
 	
 	join : function(nick, hash) {
 	  var self = this;
+	  this.hash = hash;
 	  $.ajax({
 	    type: "GET",
 	    url: "/join",
@@ -46,7 +47,6 @@ Chat.prototype = {
 	      hash : hash
 	    },
 	    success : function(json) {
-	      self.key = json.key;
     	  self.attach();
     	  $("#my_nick").text(nick);
 	    }
@@ -55,6 +55,7 @@ Chat.prototype = {
 	
   attach : function() {
     var self = this;
+    
     $('#message').keyup(function(e) {
     	if(e.keyCode == 13) {
     	  var message = $(this).val();
@@ -63,7 +64,7 @@ Chat.prototype = {
     			url: "http://"+self.address+":"+self.port+"/send",
     	    data : {
     	      message : message,
-    	      key : self.key
+    	      hash    : self.hash
     	    }
     	  });
     	  $(this).val("");
@@ -74,14 +75,13 @@ Chat.prototype = {
   },
   
   who : function() {
-    var self = this;
-    
+    var self = this;    
 	  $.ajax({
 			dataType: 'json',
 			type: "GET",      
 			url: "/who",
 			data : {
-			  key : self.key
+			  hash : self.hash
 			},
 			success: function (json) {
         self.writeWho(json);        
@@ -96,10 +96,13 @@ Chat.prototype = {
     for(u in users) {
       $("#who").append("<div>"+users[u]+"</div>");
     }
-  },  
+  },
+  
+  newUser : function(nick) {
+    $("#messages").append("<div><span>"+nick+" joined</span></div>");    
+  },
 
-  writeResult : function(json) {
-    messages = json['messages'];
+  appendMessages : function(messages) {
     for(o in messages) {
       $("#messages").append("<div><span>"+messages[o].nick+"</span>: <span>"+messages[o].message+"</span></div>");
     }

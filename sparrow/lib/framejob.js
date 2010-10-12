@@ -52,7 +52,7 @@ httpServer = http.createServer(function (request, response) {
       });
     }
 
-    log("Rendering "+typeof content);      
+    log("CONTENT TYPE "+typeof content);      
         
     if(typeof content == "string") {
       request.output({
@@ -78,7 +78,7 @@ httpServer = http.createServer(function (request, response) {
       { "Content-Type"   : content['type'],
         "Content-Length" : body.length}.extend(content['headers'] || {})
     );
-    log("Rendering " + sys.inspect(body));
+    log("CONTENT: " + sys.inspect(body));
     response.end(body);
   };
   

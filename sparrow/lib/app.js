@@ -15,24 +15,26 @@ app.get("/", function(request) {
   request.redirect("/client.html");
 });
 
-app.get("/join", function(params) {
-  var nick = params.nick;
-  var hash = params.hash;
-  var session = Chat.createSession(nick, hash);
-  if(session) {
-    log("Connection: " + nick + "@" + params.connection.remoteAddress);  
-    return session;
-  } else {
-    return {error : "Hash does not match"}
-  }    
+app.get("/join", function(request) {
+  var nick = request.nick;
+  var hash = request.hash;
+  
+  log("Connection: " + nick + "@" + request.connection.remoteAddress);  
+  
+  var result = Chat.join(nick, hash);
+  return result;
 });
 
 app.post("/send", function(params) {
   var message = params.message;
-  var session = Chat.session(params.key);
+  var session = Chat.session(params.hash);
+  log(params.hash)  
   log("Received: " + message + " by " + session.nick);
+  
   var id = Chat.push(message, session.nick);
-  return {json:id};
+  return { 
+    json : id 
+  };
 });
 
 app.get("/receive", function(request) {
@@ -43,7 +45,7 @@ app.get("/receive", function(request) {
 });
 
 app.get("/who", function(request) {
-  return Chat.activeSessions();
+  return Chat.users();
 });
 
 Chat = new function() {
@@ -55,7 +57,7 @@ Chat = new function() {
     return crypto.createHmac("sha1", SECRET).update(data).digest("hex");
   };
   	
-	this.activeSessions = function() {
+	this.users = function() {
 	  var nicks = [];
     for(i in sessions) {
       if(sessions[i].hasOwnProperty("nick"))
@@ -64,33 +66,47 @@ Chat = new function() {
     return nicks;
 	};
 	
-	this.session = function(key) {
-	  return sessions[key];
+	this.session = function(hash) {
+	  return sessions[hash];
 	};
 	
-	this.createSession = function(nick, hash) {
-	  var session = {key:this.hash(nick), nick:nick};
+	this.join = function(nick, hash) {
+	  var session = { 
+	    hash : this.hash(nick), 
+	    nick : nick 
+	  };
 	  if(this.hash(nick) == hash) {
-	    sessions[session.key] = session;
-	    return session;
+	    sessions[session.hash] = session;
+	    this.send('new_user', {
+        users    : this.users(),
+        new_user : nick
+      });
+      return session;
 	  } else {
 	    log("Got hash "+hash+". Expected hash "+this.hash(nick));
-	    return false;
+	    return {error:"invalid hash"}
 	  }
-	};	
+	};
+	
+	this.send = function(op, object) {
+	  while (callbacks.length > 0) {
+      callbacks.shift().callback({op : op, time: new Date(), data: object});
+    }
+	};
 
   this.push = function(text, nick) {
     log("New message received: " + text);
     message = { message: text, id: messages.length, nick : nick};
     messages.push(message);
     
-    while (callbacks.length > 0) {
-       callbacks.shift().callback({messages: [message], last_id: messages.length});
-    }
+    this.send('new_message', {
+      messages: [message], 
+      last_id:  messages.length
+    });
     
     return messages.length;
   };
-  
+    
   this.query = function(id, callback) {
     var result = [];
     id = id ? id : 0;
@@ -101,15 +117,23 @@ Chat = new function() {
     }
     
     if (result.length != 0) {
-      callback({messages: result, last_id: messages.length});
+      callback({
+        op : 'new_message',
+        data : {
+          messages : result, 
+          last_id  : messages.length
+      }});
     } else {
-      callbacks.push({timestamp: new Date(), callback: callback });
+      callbacks.push({
+        run_at   : new Date(), 
+        callback : callback
+      });
     }
     
     setInterval(function () {
       var now = new Date();
-      while (callbacks.length > 0 && now - callbacks[0].timestamp > 30*1000) {
-        callbacks.shift().callback({messages: [], last_id: messages.length});
+      while (callbacks.length > 0 && now - callbacks[0].run_at > 30*1000) {
+        callbacks.shift().callback({op:'noop'});
       }
     }, 3000);    
   };
