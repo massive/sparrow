@@ -1,4 +1,4 @@
-require("./framejob");
+require("./jack");
 var sys = require("sys");
 var crypto = require("crypto");
 
@@ -6,7 +6,7 @@ var PORT = 8000;
 var HOST = "127.0.0.1";
 var SECRET = "TopSecretPassCode";
 
-app = Framejob.listen(PORT, HOST);
+app = Jack.listen(PORT, HOST);
 app.get("/client.js", {file : "client/client.js"});
 app.get("/client.html", {file : "client/client.html"});
 app.get("/base.css", {file : "client/base.css"});

@@ -33,7 +33,7 @@ httpServer = http.createServer(function (request, response) {
     }
     
     request.params = params;
-    var handler = Framejob.resolve(request);
+    var handler = Jack.resolve(request);
     var result = handler(request);
     if(typeof result != "undefined" || typeof result != "boolean")
       request.render(result);
@@ -91,7 +91,7 @@ httpServer = http.createServer(function (request, response) {
   };  
 });
 
-exports = Framejob = new function() {
+exports = Jack = new function() {
   var routes = {};
   var self = this;
     

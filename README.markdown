@@ -1,5 +1,5 @@
-Framejob
-========
+Sparrow - Simple Chat for Node.js
+=======================
 
 Simple node.js chat server and/or application framework.
 
