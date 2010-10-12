@@ -75,22 +75,25 @@ Chat = new function() {
 	    hash : this.hash(nick), 
 	    nick : nick 
 	  };
+	  
 	  if(this.hash(nick) == hash) {
 	    sessions[session.hash] = session;
-	    this.send('new_user', {
+	    var result = {
         users    : this.users(),
         new_user : nick
-      });
-      return session;
+      };
+	    this.sendCallbacks(result);
+      return result;
 	  } else {
 	    log("Got hash "+hash+". Expected hash "+this.hash(nick));
-	    return {error:"invalid hash"}
+	    return { error : "invalid hash" }
 	  }
 	};
 	
-	this.send = function(op, object) {
+	this.sendCallbacks = function(object) {
+	  object.time = new Date();
 	  while (callbacks.length > 0) {
-      callbacks.shift().callback({op : op, time: new Date(), data: object});
+      callbacks.shift().callback(object);
     }
 	};
 
@@ -99,7 +102,7 @@ Chat = new function() {
     message = { message: text, id: messages.length, nick : nick};
     messages.push(message);
     
-    this.send('new_message', {
+    this.sendCallbacks({
       messages: [message], 
       last_id:  messages.length
     });
@@ -118,11 +121,9 @@ Chat = new function() {
     
     if (result.length != 0) {
       callback({
-        op : 'new_message',
-        data : {
-          messages : result, 
-          last_id  : messages.length
-      }});
+        messages : result, 
+        last_id  : messages.length
+      });
     } else {
       callbacks.push({
         run_at   : new Date(), 

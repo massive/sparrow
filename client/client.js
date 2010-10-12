@@ -22,14 +22,19 @@ Chat.prototype = {
 			  hash : self.hash
 			},
 			success: function (json) {
-			  if(json.op == "new_message") {
-  				self.appendMessages(json.data.messages);
-          self.id = json.data.last_id;
-			  } else if(json.op == "new_user") {
-			    self.newUser(json.data.new_user);
-  			} else {
-  			  console.log("Received unknown packet: "+json.op);
-  			}  			
+			  if(json.messages) {
+  				self.appendMessages(json.messages);
+          self.id = json.last_id;
+			  }
+			  
+			  if(json.new_user) {
+			    self.newUser(json.new_user);
+  			} 
+  			
+  			if(json.users) {
+  			  self.users(json.users);
+  			}
+  			
   			self.longPoll();
 			}
 		});
@@ -48,7 +53,10 @@ Chat.prototype = {
 	    },
 	    success : function(json) {
     	  self.attach();
-    	  $("#my_nick").text(nick);
+    	  if(json.users) {
+  			  self.users(json.users);
+  			}
+    	  $("#nick").text(nick);
 	    }
 	  });
 	},
@@ -71,7 +79,6 @@ Chat.prototype = {
     	}  	
     });
     this.longPoll();
-    //this.who();
   },
   
   who : function() {
@@ -84,17 +91,15 @@ Chat.prototype = {
 			  hash : self.hash
 			},
 			success: function (json) {
-        self.writeWho(json);        
-    	  setTimeout(function() { self.who() }, 5000);
+        self.users(json.users);        
 			}
 		});
   },
   
-  writeWho : function(users) {
-    var self = this;    
-    $("#who").empty();
+  users : function(users) {
+    $("#users").empty();
     for(u in users) {
-      $("#who").append("<div>"+users[u]+"</div>");
+      $("#users").append("<div>"+users[u]+"</div>");
     }
   },
   
