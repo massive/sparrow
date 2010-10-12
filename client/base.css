@@ -1,0 +1,23 @@
+#messages {
+  height:300px;
+  width:600px;
+  overflow: auto;
+  border:1px solid black;
+  margin-bottom:20px;
+}
+
+body {
+  margin:20px;
+}
+
+#message {
+  width:500px;
+}
+
+#my_nick {
+  padding-right:20px;
+}
+
+#who {
+  position: absolute;
+}

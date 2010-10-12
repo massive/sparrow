@@ -1,6 +1,8 @@
-function Chat() {
+function Chat(address, port) {
   this.id = 0;
   this.key = 0;
+  this.address = address;
+  this.port = port;
 };
 
 Chat.prototype = {  
@@ -33,7 +35,7 @@ Chat.prototype = {
 		});
 	},
 	
-	joinAs : function(nick, hash) {
+	join : function(nick, hash) {
 	  var self = this;
 	  $.ajax({
 	    type: "GET",
@@ -46,6 +48,7 @@ Chat.prototype = {
 	    success : function(json) {
 	      self.key = json.key;
     	  self.attach();
+    	  $("#my_nick").text(nick);
 	    }
 	  });
 	},
@@ -57,7 +60,7 @@ Chat.prototype = {
     	  var message = $(this).val();
     	  $.ajax({
     	    type : "POST",
-    			url: "http://127.0.0.1:8000/send",
+    			url: "http://"+self.address+":"+self.port+"/send",
     	    data : {
     	      message : message,
     	      key : self.key
@@ -67,7 +70,7 @@ Chat.prototype = {
     	}  	
     });
     this.longPoll();
-    this.who();
+    //this.who();
   },
   
   who : function() {
@@ -85,12 +88,10 @@ Chat.prototype = {
     	  setTimeout(function() { self.who() }, 5000);
 			}
 		});
-		console.log("Running who")
   },
   
   writeWho : function(users) {
-    var self = this;
-    
+    var self = this;    
     $("#who").empty();
     for(u in users) {
       $("#who").append("<div>"+users[u]+"</div>");
@@ -98,10 +99,11 @@ Chat.prototype = {
   },  
 
   writeResult : function(json) {
-    messages = json['messages']
+    messages = json['messages'];
     for(o in messages) {
       $("#messages").append("<div><span>"+messages[o].nick+"</span>: <span>"+messages[o].message+"</span></div>");
     }
+    $("#messages").scrollTop($("#messages")[0].scrollHeight);
   }
 	
 };

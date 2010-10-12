@@ -33,7 +33,7 @@ httpServer = http.createServer(function (request, response) {
     }
     
     request.params = params;
-    var handler = Nodework.resolve(request);
+    var handler = Framejob.resolve(request);
     var result = handler(request);
     if(typeof result != "undefined" || typeof result != "boolean")
       request.render(result);
@@ -91,7 +91,7 @@ httpServer = http.createServer(function (request, response) {
   };  
 });
 
-exports = Nodework = new function() {
+exports = Framejob = new function() {
   var routes = {};
   var self = this;
     
@@ -155,15 +155,3 @@ exports = Nodework = new function() {
     return self;
   }; 
 }
-
-
-
-
-
-
-
-
-
-
-
-
