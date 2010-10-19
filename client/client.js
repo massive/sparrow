@@ -40,16 +40,17 @@ Chat.prototype = {
 		});
 	},
 	
-	join : function(nick, hash) {
+	join : function(nick, key) {
 	  var self = this;
-	  this.hash = hash;
+	  this.key = key;
+	  
 	  $.ajax({
 	    type: "GET",
 	    url: "/join",
 	    dataType : 'json',
 	    data :  {
 	      nick : nick,
-	      hash : hash
+	      key : key
 	    },
 	    success : function(json) {
     	  self.attach();
@@ -72,7 +73,7 @@ Chat.prototype = {
     			url: "http://"+self.address+":"+self.port+"/send",
     	    data : {
     	      message : message,
-    	      hash    : self.hash
+    	      key     : self.key
     	    }
     	  });
     	  $(this).val("");
@@ -104,12 +105,17 @@ Chat.prototype = {
   },
   
   newUser : function(nick) {
-    $("#messages").append("<div><span>"+nick+" joined</span></div>");    
+    //$("#messages").append("<div><span>"+nick+" joined</span></div>");    
   },
 
   appendMessages : function(messages) {
     for(o in messages) {
-      $("#messages").append("<div><span>"+messages[o].nick+"</span>: <span>"+messages[o].message+"</span></div>");
+      if(messages[o].nick) {
+        var from = messages[o].nick;
+      } else if(messages[o].system) {
+        var from = "[system]";
+      }
+      $("#messages").append("<div><span>"+from+"</span>: <span>"+messages[o].message+"</span></div>");
     }
     $("#messages").scrollTop($("#messages")[0].scrollHeight);
   }

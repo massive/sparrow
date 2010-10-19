@@ -17,18 +17,15 @@ app.get("/", function(request) {
 
 app.get("/join", function(request) {
   var nick = request.nick;
-  var hash = request.hash;
+  var key  = request.key;
   
-  log("Connection: " + nick + "@" + request.connection.remoteAddress);  
-  
-  var result = Chat.join(nick, hash);
+  var result = Chat.join(nick, key);
   return result;
 });
 
 app.post("/send", function(params) {
   var message = params.message;
-  var session = Chat.session(params.hash);
-  log(params.hash)  
+  var session = Chat.session(params.key);
   log("Received: " + message + " by " + session.nick);
   
   var id = Chat.push(message, session.nick);
@@ -70,7 +67,7 @@ Chat = new function() {
 	  return sessions[hash];
 	};
 	
-	this.join = function(nick, hash) {
+	this.join = function(nick, hash, callbacks) {
 	  var session = { 
 	    hash : this.hash(nick), 
 	    nick : nick 
@@ -82,11 +79,11 @@ Chat = new function() {
         users    : this.users(),
         new_user : nick
       };
-	    this.sendCallbacks(result);
-      return result;
+      this.notify(nick+" joined")
+	    return result;
 	  } else {
 	    log("Got hash "+hash+". Expected hash "+this.hash(nick));
-	    return { error : "invalid hash" }
+      return {error : "Invalid hash"}
 	  }
 	};
 	
@@ -96,6 +93,19 @@ Chat = new function() {
       callbacks.shift().callback(object);
     }
 	};
+	
+	this.notify = function(text) {
+    log("New message received: " + text);
+    message = { message: text, id: messages.length, system : true};
+    messages.push(message);
+    
+    this.sendCallbacks({
+      messages: [message], 
+      last_id:  messages.length
+    });
+    
+    return messages.length;	  
+	}
 
   this.push = function(text, nick) {
     log("New message received: " + text);

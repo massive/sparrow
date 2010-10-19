@@ -45,7 +45,7 @@ httpServer = http.createServer(function (request, response) {
       return;
     };
     
-    if(content.error) {
+    if(content.text) {
       this.output({
         body : content.error,
         code : 400
