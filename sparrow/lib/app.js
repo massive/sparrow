@@ -11,21 +11,21 @@ app.get("/client.js", {file : "client/client.js"});
 app.get("/client.html", {file : "client/client.html"});
 app.get("/base.css", {file : "client/base.css"});
 
-app.get("/", function(request) {
-  request.redirect("/client.html");
+app.get("/", function() {
+  this.redirect("/client.html");
 });
 
-app.get("/join", function(request) {
-  var nick = request.nick;
-  var key  = request.key;
+app.get("/join", function() {
+  var nick = this.params("nick");
+  var key  = this.params("key");
   
   var result = Chat.join(nick, key);
   return result;
 });
 
-app.post("/send", function(params) {
-  var message = params.message;
-  var session = Chat.session(params.key);
+app.post("/send", function() {
+  var message = this.params("message");
+  var session = Chat.session(this.params("key"));
   log("Received: " + message + " by " + session.nick);
   
   var id = Chat.push(message, session.nick);
@@ -34,14 +34,15 @@ app.post("/send", function(params) {
   };
 });
 
-app.get("/receive", function(request) {
-  var id = request.params.id;
+app.get("/receive", function() {
+  var id = this.params("id");
+  var self = this;
   Chat.query(id, function(messages) {
-    request.render(messages);
+    self.render(messages);
   });
 });
 
-app.get("/who", function(request) {
+app.get("/who", function() {
   return Chat.users();
 });
 

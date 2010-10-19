@@ -14,6 +14,15 @@ Object.prototype.extend = function(destination, source) {
     return destination;
 };
 
+Object.prototype.each = function (callback) {
+  var obj = this;
+  for ( prop in obj ) {
+    if ( obj.hasOwnProperty( prop ) && typeof obj[prop] !== "function" ) {
+      callback( prop, obj[prop] );
+    }
+  }
+};
+
 Number.prototype.pad =
 	function (n,p) {
 		var s = '' + this;

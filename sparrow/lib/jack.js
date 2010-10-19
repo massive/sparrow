@@ -17,27 +17,31 @@ httpServer = http.createServer(function (request, response) {
   });
 
   request.addListener('end', function() {
-    var obj = qs.parse(body.replace(/\+/g, ' '));
+    var obj   = qs.parse(body.replace(/\+/g, ' '));
     var query = qs.parse(url.parse(request.url).query);
+    var that = this;
+    
+    request.parameters = {};
     request.response = response;
-    var params = {};
     
-    for(i in obj) {
-      params[i] = obj[i];
-      request[i] = obj[i];
-    }
+    obj.each(function(key, value) {
+      that.parameters[key] = value;
+    });
     
-    for(i in query) {
-      params[i] = query[i];
-      request[i] = query[i];
-    }
+    query.each(function(key, value) {
+      that.parameters[key] = value;
+    });
     
-    request.params = params;
     var handler = Jack.resolve(request);
-    var result = handler(request);
+    var result = handler.bind(request)(request);
     if(typeof result != "undefined" || typeof result != "boolean")
       request.render(result);
   });
+  
+  request.params = function(param) {
+    log("Fetch param "+param)
+    return this.parameters[param] || null;
+  };
   
   request.render = function(content) {
     if(typeof content == "undefined") {
@@ -46,7 +50,7 @@ httpServer = http.createServer(function (request, response) {
     };
     
     if(content.text) {
-      this.output({
+      this.writeOut({
         body : content.error,
         code : 400
       });
@@ -55,21 +59,21 @@ httpServer = http.createServer(function (request, response) {
     log("CONTENT TYPE "+typeof content);      
         
     if(typeof content == "string") {
-      request.output({
+      request.writeOut({
         body : content,
         type : 'text/plain'
       });
     } else if(content['json'] || typeof content == 'object') {
-      request.output({
+      request.writeOut({
         type: 'application/json',
         body: JSON.stringify(content['json'] || content)
       });
     } else {
-      request.output(content);
+      request.writeOut(content);
     }      
   };
 
-  request.output = function (content) {  
+  request.writeOut = function (content) {  
     var body = content['body'];
     if(typeof content['code'] == "undefined") 
       content['code'] = 200;
@@ -83,7 +87,7 @@ httpServer = http.createServer(function (request, response) {
   };
   
   request.redirect = function(location){
-    this.output({  
+    this.writeOut({  
       code: 302,
       headers: [[ 'Location', location ]], 
       body: '<a href="'+ location + '">' + location + '</a>' 
