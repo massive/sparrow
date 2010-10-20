@@ -32,7 +32,7 @@ httpServer = http.createServer(function (request, response) {
       that.parameters[key] = value;
     });
     
-    var handler = Jack.resolve(request);
+    var handler = Sparrow.resolve(request);
     var result = handler.bind(request)(request);
     if(typeof result != "undefined" || typeof result != "boolean")
       request.render(result);
@@ -95,8 +95,9 @@ httpServer = http.createServer(function (request, response) {
   };  
 });
 
-exports = Jack = new function() {
+Sparrow = new function() {
   var routes = {};
+  var config = {};
   var self = this;
     
   this.fileHandler = function(filename) {
@@ -109,7 +110,8 @@ exports = Jack = new function() {
   }
   
   this.staticHandler = function (filename, callback) {
-    log("Loading file " + filename);
+    var filename = this.config.root + filename;
+    log("Loading file " + filename);    
     readFile(filename, function (err, data) {
       if (err) {
         log("Error loading " + filename);
@@ -123,7 +125,7 @@ exports = Jack = new function() {
   
   this.get = function (path, handler) {
     if(typeof handler == "object") {
-      handler = this.fileHandler(handler["file"]);
+      handler = self.fileHandler(handler["file"]);
     }
     routes[path] = handler;
   };
@@ -142,8 +144,11 @@ exports = Jack = new function() {
       
     sys.puts("["+(new Date()).strftime("%H:%m:%S %d-%m-%Y") + "] " + message);
   };
-    
-  GLOBAL.log = this.log;
+  
+  var globalize = ['log', 'get', 'post'];
+  globalize.each(function(i, func) {
+    GLOBAL[func] = self[func];
+  });
   
   this.notFound = function(request) {
     var NOT_FOUND = "Not Found\n";
@@ -153,9 +158,15 @@ exports = Jack = new function() {
     request.response.end(NOT_FOUND);
   };
   
-  this.listen = function(port, host) {
-    log("Server at http://" + (host || "127.0.0.1") + ":" + port.toString() + "/");    
-    httpServer.listen(Number(process.env.PORT || port), host);
+  this.config = function(configuration) {
+    this.config = configuration;
+  };
+  
+  this.start = function() {
+    log("Server at http://" + (this.config.host || "127.0.0.1") + ":" + this.config.port.toString() + "/");    
+    httpServer.listen(Number(process.env.PORT || this.config.port), this.config.host);
     return self;
   }; 
 }
+
+exports = Sparrow;

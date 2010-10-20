@@ -1,21 +1,14 @@
-require("./jack");
-var sys = require("sys");
-var crypto = require("crypto");
+require("./config/application.js");
 
-var PORT = 8000;
-var HOST = "127.0.0.1";
-var SECRET = "TopSecretPassCode";
+get("/client.js", {file : "client/client.js"});
+get("/client.html", {file : "client/client.html"});
+get("/base.css", {file : "client/base.css"});
 
-app = Jack.listen(PORT, HOST);
-app.get("/client.js", {file : "client/client.js"});
-app.get("/client.html", {file : "client/client.html"});
-app.get("/base.css", {file : "client/base.css"});
-
-app.get("/", function() {
+get("/", function() {
   this.redirect("/client.html");
 });
 
-app.get("/join", function() {
+get("/join", function() {
   var nick = this.params("nick");
   var key  = this.params("key");
   
@@ -23,7 +16,7 @@ app.get("/join", function() {
   return result;
 });
 
-app.post("/send", function() {
+post("/send", function() {
   var message = this.params("message");
   var session = Chat.session(this.params("key"));
   log("Received: " + message + " by " + session.nick);
@@ -34,7 +27,7 @@ app.post("/send", function() {
   };
 });
 
-app.get("/receive", function() {
+get("/receive", function() {
   var id = this.params("id");
   var self = this;
   Chat.query(id, function(messages) {
@@ -42,11 +35,14 @@ app.get("/receive", function() {
   });
 });
 
-app.get("/who", function() {
+get("/who", function() {
   return Chat.users();
 });
 
-Chat = new function() {
+var crypto = require("crypto");
+var SECRET = "TopSecretPassCode";
+
+Chat = new function() {  
   var messages  = [];
   var callbacks = [];
   var sessions  = [];
