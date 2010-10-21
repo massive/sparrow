@@ -13,8 +13,4 @@ Sparrow.config({
   root : path.dirname(__filename) + "/../",
 });
 
-Chat.config({
-  secret : "TopSecretPassCode"  
-});
-
 Sparrow.start();

@@ -1,6 +1,6 @@
 var crypto = require("crypto");
 
-Chat = new function() {  
+Chat = function() {  
   var messages  = [];
   var callbacks = [];
   var sessions  = [];
@@ -114,4 +114,4 @@ Chat = new function() {
     }, 3000);    
   };
 };
-exports = Chat
+exports = Chat;
