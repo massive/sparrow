@@ -5,7 +5,6 @@ chat.config({
   secret : "TopSecretPassCode"  
 });
 
-
 get("/client.js", {file : "client/client.js"});
 get("/client.html", {file : "client/client.html"});
 get("/base.css", {file : "client/base.css"});
@@ -43,6 +42,3 @@ get("/receive", function() {
 get("/who", function() {
   return chat.users();
 });
-
-
-

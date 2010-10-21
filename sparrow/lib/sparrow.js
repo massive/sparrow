@@ -33,7 +33,15 @@ httpServer = http.createServer(function (request, response) {
     });
     
     var handler = Sparrow.resolve(request);
-    var result = handler.bind(request)(request);
+    try {
+      var result = handler.bind(request)(request);
+    } catch(err) {
+      log(err, Sparrow.LOG_LEVEL_ERROR);
+      this.writeOut({
+        body : err.message,
+        code : 500
+      });
+    }
     if(typeof result != "undefined" || typeof result != "boolean")
       request.render(result);
   });
@@ -99,6 +107,7 @@ Sparrow = new function() {
   var routes = {};
   var config = {};
   var self = this;
+  var LOG_LEVEL_ERROR = 10;
     
   this.fileHandler = function(filename) {
     return function(request) { 
@@ -127,15 +136,20 @@ Sparrow = new function() {
     if(typeof handler == "object") {
       handler = self.fileHandler(handler["file"]);
     }
-    routes[path] = handler;
+    routes[path] = {callback : handler, method : 'GET'};
   };
 
   this.post = function (path, handler) {
-    routes[path] = handler;
+    routes[path] = {callback : handler, method : 'POST'};
   };
   
   this.resolve = function(request) {
-    return routes[url.parse(request.url).pathname] || self.notFound;
+    var route = routes[url.parse(request.url).pathname] || self.notFound;
+    if(route.method == request.method) {
+      return route.callback;
+    } else {
+      return self.notFound
+    }
   };
 
   this.log = function(message, vebosity) {
@@ -151,10 +165,11 @@ Sparrow = new function() {
   });
   
   this.notFound = function(request) {
-    var NOT_FOUND = "Not Found\n";
-    request.response.writeHead(404, { "Content-Type": "text/plain"
-                       , "Content-Length": NOT_FOUND.length
-                       });
+    var NOT_FOUND = ""+request.method+": "+request.url+" Not Found\n";
+    request.response.writeHead(404, { 
+        "Content-Type": "text/plain",
+        "Content-Length": NOT_FOUND.length
+    });
     request.response.end(NOT_FOUND);
   };
   
