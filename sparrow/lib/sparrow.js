@@ -131,12 +131,8 @@ Sparrow = new function() {
       }
     });    
   };
-  
-    
+      
   ['get', 'post', 'delete', 'update'].each(function(i, method) {
-    sys.puts(sys.inspect(self));
-    sys.puts(sys.inspect(routes));
-    
     this[method] = function (path, handler) {
       routes[path] = {handler : handler, method : method.toUpperCase()};
     };    

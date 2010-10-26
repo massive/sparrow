@@ -12,8 +12,7 @@ Usage
 
 Applicattion is divided into two parts, Jack and Sparrow, where Jack is the base framework and Sparrow contains the business logic.
 
-Jack Supports currently POST and GET requests.
-
+Jack supports GET, PUT, POST, and DELETE HTTP methods.
 
 
 Goals
@@ -27,17 +26,20 @@ DONE for Sparrow
 * this.render instead of request.render
 * Sessions (partially complete)
 * SimpleSO via MAC auth
+* All REST methods. DELETE, PUT first
 
-TODO for Sparrow
+TODO for Chat
 ----------------
 * Chat rooms
-* Add persistence (MongoDB and/or Redis)
 * Add tests
 * IRC-like API (/who, /join, /nick etc.)
 
-TODO for Jack
+TODO for Sparrow
 -------------
-* All REST methods. DELETE, PUT first
+* Add persistence (MongoDB and/or Redis)
+* Exception handling
 * Cookie support
 * Sessions
-* Refactor callback API 
+* Wildcard routes
+* Views
+* Refactor callback API to modules
