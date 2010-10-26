@@ -132,23 +132,25 @@ Sparrow = new function() {
     });    
   };
   
-  this.get = function (path, handler) {
-    if(typeof handler == "object") {
-      handler = self.fileHandler(handler["file"]);
-    }
-    routes[path] = {callback : handler, method : 'GET'};
-  };
-
-  this.post = function (path, handler) {
-    routes[path] = {callback : handler, method : 'POST'};
-  };
+    
+  ['get', 'post', 'delete', 'update'].each(function(i, method) {
+    sys.puts(sys.inspect(self));
+    sys.puts(sys.inspect(routes));
+    
+    this[method] = function (path, handler) {
+      routes[path] = {handler : handler, method : method.toUpperCase()};
+    };    
+  });
   
   this.resolve = function(request) {
     var route = routes[url.parse(request.url).pathname] || self.notFound;
     if(route.method == request.method) {
-      return route.callback;
+      if(route.method == "GET" && route.handler.file) {
+        return self.fileHandler(route.handler.file)
+      } 
+      return route.handler;
     } else {
-      return self.notFound
+      return self.notFound;
     }
   };
 
@@ -159,8 +161,7 @@ Sparrow = new function() {
     sys.puts("["+(new Date()).strftime("%H:%m:%S %d-%m-%Y") + "] " + message);
   };
   
-  var globalize = ['log', 'get', 'post'];
-  globalize.each(function(i, func) {
+  ['log'].each(function(i, func) {
     GLOBAL[func] = self[func];
   });
   
