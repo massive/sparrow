@@ -14,14 +14,14 @@ Applicattion is divided into two parts, Jack and Sparrow, where Jack is the base
 
 Jack supports GET, PUT, POST, and DELETE HTTP methods.
 
-
 Goals
 -----
 * Learn Node.js by creating *everything* from scratch
 * Simple SSO for integrating chat to existing systems
 * Extract the application core and create a framework from that
 
-DONE for Sparrow
+Goals accomplished
+------------------
 * params('param') instead of params.param
 * this.render instead of request.render
 * Sessions (partially complete)
