@@ -94,6 +94,10 @@ httpServer = http.createServer(function (request, response) {
     response.end(body);
   };
   
+  request.path = function() {
+    return url.parse(request.url).pathname;
+  }
+  
   request.redirect = function(location){
     this.writeOut({  
       code: 302,
@@ -104,10 +108,10 @@ httpServer = http.createServer(function (request, response) {
 });
 
 Sparrow = new function() {
-  var routes = {};
-  var config = {};
+  this.routes = {};
+  this.config = {};
   var self = this;
-  var LOG_LEVEL_ERROR = 10;
+  LOG_LEVEL_ERROR = 10;
     
   this.fileHandler = function(filename) {
     return function(request) { 
@@ -131,23 +135,84 @@ Sparrow = new function() {
       }
     });    
   };
-      
+  
+  
   ['get', 'post', 'delete', 'update'].each(function(i, method) {
+    self.routes[method.toUpperCase()] = [];
     this[method] = function (path, handler) {
-      routes[path] = {handler : handler, method : method.toUpperCase()};
+      self.addRouteFor(method.toUpperCase(), path, handler);
     };    
   });
   
+  this.addRouteFor = function(method, path, handler) {
+    if(typeof path == 'string') {
+      var path_as_regexp = path;
+      var route_keys;
+      
+      path_as_regexp = path_as_regexp.replace(/\//g, "\\/");
+      path_as_regexp = path_as_regexp.replace(/:(\w+)/g, '(\\w+)')
+      path_as_regexp = "^"+path_as_regexp+"$"
+      
+      var route_keys = [];
+      
+      var matches = path.match(/:\w+/g);
+      if(matches) {
+        matches.each(function(i, match) {
+          route_keys.push(match.substr(1));
+        });
+      }
+      
+      self.routes[method].push({
+        route : new RegExp(path_as_regexp),
+        keys : route_keys,
+        handler : handler
+      })
+    }
+  };
+  
+  this.findRouteFor = function(method, path) {    
+    var routes_for_method = self.routes[method];    
+    for(var i = 0; i < routes_for_method.length; i++) {
+      var route_as_regexp = routes_for_method[i].route;      
+      
+      if(path.match(route_as_regexp)) {
+        return routes_for_method[i];
+      }
+    }
+    return null;
+  };
+  
   this.resolve = function(request) {
-    var route = routes[url.parse(request.url).pathname] || self.notFound;
-    if(route.method == request.method) {
-      if(route.method == "GET" && route.handler.file) {
-        return self.fileHandler(route.handler.file)
+    var route_set = this.findRouteFor(request.method, request.path()) || self.notFound;
+    
+    if(route_set) {      
+      if(request.method == "GET" && route_set.handler.file) {
+        return self.fileHandler(route_set.handler.file)
       } 
-      return route.handler;
+      
+      if(route_set.keys)
+        self.extract_route_parameters(route_set, request);
+        
+      return route_set.handler;
     } else {
       return self.notFound;
     }
+  };
+  
+  this.extract_route_parameters = function(route_set, request) {
+    var path = request.path();
+    var keys = route_set.keys;
+    
+    var matches = path.match(route_set.route);
+        
+    for(i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      var value = matches[i+1];
+      request.parameters[key] = value;      
+    }
+    
+    log(request);
+    
   };
 
   this.log = function(message, vebosity) {

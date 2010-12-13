@@ -13,12 +13,11 @@ Chat.prototype = {
 			cache: false,
 			dataType: 'json',
 			type: "GET",      
-			url: "/receive",
+			url: "/receive/"+self.id,
 			error: function () {
 				setTimeout(self.longPoll, 10*1000);
 			},
 			data : {
-			  id  : self.id,
 			  hash : self.hash
 			},
 			success: function (json) {

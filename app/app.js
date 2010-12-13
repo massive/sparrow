@@ -31,10 +31,10 @@ post("/send", function() {
   };
 });
 
-get("/receive", function() {
-  var id = this.params("id");
+get("/receive/:since", function() {
+  var since = this.params("since");
   var self = this;
-  chat.query(id, function(messages) {
+  chat.query(since, function(messages) {
     self.render(messages);
   });
 });

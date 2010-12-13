@@ -27,6 +27,7 @@ Goals accomplished
 * Sessions (partially complete)
 * SimpleSO via MAC auth
 * All REST methods. DELETE, PUT first
+* Wildcards / parametrized routes
 
 TODO for Chat
 ----------------
@@ -40,6 +41,5 @@ TODO for Sparrow
 * Exception handling
 * Cookie support
 * Sessions
-* Wildcard routes
 * Views
 * Refactor callback API to modules
